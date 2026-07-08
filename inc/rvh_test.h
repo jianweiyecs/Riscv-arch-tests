@@ -77,7 +77,10 @@
 #endif
 
 enum priv {PRIV_VU = 0, PRIV_HU = 1, PRIV_VS = 2, PRIV_HS = 3, PRIV_M = 4, PRIV_MAX};
+#define HANDLER_RETURN_MNRET 5U
 extern unsigned curr_priv;
+extern bool rnmi_handler_enabled;
+extern bool double_trap_enabled;
 
 static const char* priv_strs[] = {
     [PRIV_VU] = "vu",
@@ -107,10 +110,32 @@ typedef bool (*test_func_t)();
 extern test_func_t* test_table;
 extern size_t test_table_size;
 
+static inline const char* test_priv_str(unsigned priv)
+{
+    return (priv < PRIV_MAX && priv_strs[priv] != NULL) ? priv_strs[priv] : "?";
+}
+
+static inline void test_print_assert_failure_context(const char* file, int line, const char* expr)
+{
+    printf("\n\tassert_site: %s:%d", file, line);
+    printf("\n\tassert_expr: %s", expr);
+    printf("\n\texcpt: testing=%d triggered=%d priv=%s cause=0x%llx epc=0x%llx tval=0x%llx tval2=0x%llx tinst=0x%llx fault_inst=0x%llx curr=%s",
+        excpt.testing,
+        excpt.triggered,
+        test_priv_str(excpt.priv),
+        (unsigned long long)excpt.cause,
+        (unsigned long long)excpt.epc,
+        (unsigned long long)excpt.tval,
+        (unsigned long long)excpt.tval2,
+        (unsigned long long)excpt.tinst,
+        (unsigned long long)excpt.fault_inst,
+        test_priv_str(curr_priv));
+}
+
 #define TEST_START()\
     const char* __test_name = __func__;\
     bool test_status = true;\
-    if(LOG_LEVEL >= LOG_INFO) printf(CBLU "%-85s" CDFLT, __test_name);\
+    if(LOG_LEVEL >= LOG_INFO) printf(CBLU "%-70s" CDFLT, __test_name);\
     if(LOG_LEVEL >= LOG_DETAIL) printf("\n");
 
 #define TEST_REGISTER(test)\
@@ -125,7 +150,7 @@ extern size_t test_table_size;
         for(int i = line_size; i < size; i+=line_size)\
             printf(CBLU "\n\t%-85.*s" CDFLT, line_size, &test[i]);\
         printf("%s" CDFLT, (cond) ? CGRN "PASSED" : CRED "FAILED");\
-        if(!(cond)) { printf("\n\t("); printf(""__VA_ARGS__); printf(")"); }\
+        if(!(cond)) { printf("\n\t("); printf(""__VA_ARGS__); printf(")"); test_print_assert_failure_context(__FILE__, __LINE__, #cond); }\
         printf("\n");\
     }\
     test_status = test_status && cond;\
@@ -163,7 +188,7 @@ extern size_t test_table_size;
 }
 
 
-#define TEST_END(test) {\
+#define TEST_END(...) {\
 failed:\
     if(LOG_LEVEL >= LOG_INFO && LOG_LEVEL < LOG_VERBOSE){\
          printf("%s\n" CDFLT, (test_status) ? CGRN "PASSED" : CRED "FAILED");\
@@ -172,6 +197,13 @@ failed:\
     reset_state();\
     return (test_status);\
 }
+
+uint64_t ecall(uint64_t a0, uint64_t a1);
+void reset_state();
+void goto_priv(int target_priv);
+void goto_priv_u_to_m_direct(int target_priv);
+void excpt_info();
+void random_m_instruction();
 
 #define INFO_PRINT(var) {\
     INFO(#var ": 0x%llx", (var));\

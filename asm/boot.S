@@ -4,6 +4,11 @@
 _boot:
     bnez a0, .
     csrwi    sscratch, 0xf
+
+    /* Allow future F/V test code to touch FP/vector state after reset. */
+    li t0, (1 << 13) | (1 << 9)
+    csrs mstatus, t0
+
     /* Initialize stack pointer */
     la sp, __stack_top
 

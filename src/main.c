@@ -40,37 +40,17 @@ bool check_csr_field_spec(){
     TEST_END();
 }
 
-bool check_misa_h(){
 
-    TEST_START();
-
-    uint64_t misa = CSRR(misa);
-    CSRS(misa, (1ULL << 7));
-
-    bool hyp_ext_present = CSRR(misa) & (1ULL << 7);
-    TEST_ASSERT("check h bit after setting it",  hyp_ext_present, "hypervisor extensions not present");
-
-    if(!hyp_ext_present)
-        return false;
-
-    CSRC(misa, (1ULL << 7));
-    if(((CSRR(misa) & (1ULL << 7)))){
-        VERBOSE("misa h bit is hardwired");
-    }
-
-    CSRW(misa, misa);
-
-    TEST_END();
-}
 
 void main(){
 
-    INFO("risc-v hypervisor extensions tests");
+    INFO("risc-v bare-metal architecture tests");
+    // printf("%f\n",CSRR(CSR_SSCRATCH));
 
-    if(check_misa_h()){
+    reset_state();
+    for(int i = 0; i < test_table_size; i++){
         reset_state();
-        for(int i = 0; i < test_table_size; i++)
-            test_table[i]();
+        test_table[i]();
     }
 
     INFO("end");

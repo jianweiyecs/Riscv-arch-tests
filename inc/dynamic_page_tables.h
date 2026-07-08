@@ -1,35 +1,38 @@
-#ifndef PAGE_TABLES_H
-#define PAGE_TABLES_H
+#ifndef DYNAMIC_PAGE_TABLES_H
+#define DYNAMIC_PAGE_TABLES_H
 
 #include <rvh_test.h>
+
+typedef enum {
+    PAGE_TABLE_MODE_SV39 = 0,
+    PAGE_TABLE_MODE_SV48 = 1,
+} page_table_mode_t;
+
+extern page_table_mode_t current_page_table_mode;
+
+void set_page_table_mode(page_table_mode_t mode);
+page_table_mode_t get_page_table_mode(void);
+int get_page_table_levels(void);
+int get_virtual_address_bits(void);
+int get_physical_page_number_bits(void);
 
 #define PAGE_SIZE 0x1000ULL
 #define PT_SIZE (PAGE_SIZE)
 #define PAGE_ADDR_MSK (~(PAGE_SIZE - 1))
 #define PAGE_SHIFT (12)
 
-#if !defined(sv39) && !defined(sv48) && !defined(sv39sv48)
-#define sv39
-#endif
+#define SUPERPAGE_SIZE(N) \
+    ((current_page_table_mode == PAGE_TABLE_MODE_SV48) ? \
+     ((PAGE_SIZE) << (((3-(N)))*9)) : \
+     ((PAGE_SIZE) << (((2-(N)))*9)))
 
-#if (defined(sv39) + defined(sv48) + defined(sv39sv48)) != 1
-#error "select exactly one page-table mode: sv39, sv48, or sv39sv48"
-#endif
+#define PT_LVLS \
+    ((current_page_table_mode == PAGE_TABLE_MODE_SV48) ? 4 : 3)
 
-#ifdef sv39
-#define SUPERPAGE_SIZE(N) ((PAGE_SIZE) << (((2-N))*9))
-#define PT_LVLS (3)  // assumes sv39 for rv64
-#define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
+#define PTE_INDEX_SHIFT(LEVEL) \
+    ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
+
 #define PTE_ADDR_MSK BIT_MASK(12, 44)
-#endif
-
-#if defined(sv48) || defined(sv39sv48)
-#define SUPERPAGE_SIZE(N) ((PAGE_SIZE) << (((3-N))*9))
-#define PT_LVLS (4)
-#define PTE_INDEX_SHIFT(LEVEL) ((9 * (PT_LVLS - 1 - (LEVEL))) + 12)
-#define PTE_ADDR_MSK BIT_MASK(12, 44)
-#endif
-
 #define PTE_INDEX(LEVEL, ADDR) (((ADDR) >> PTE_INDEX_SHIFT(LEVEL)) & (0x1FF))
 #define PTE_FLAGS_MSK BIT_MASK(0, 8)
 
@@ -67,12 +70,12 @@
 #define PTE_PAGE (PTE_RWX)
 #define PTE_SUPERPAGE (PTE_PAGE)
 
-/* ------------------------------------------------------------- */
-
+#ifndef TEST_PPAGE_BASE
 #define TEST_PPAGE_BASE (MEM_BASE+(MEM_SIZE/2))
+#endif
 #define TEST_VPAGE_BASE (0x100000000)
 
-enum test_page { 
+enum test_page {
     VSRWX_GURWX,
     VSRWX_GURW,
     VSRWX_GURX,
@@ -273,9 +276,5 @@ void hspt_512GB_superpage_misalign_setup();
 void hspt_512GB_superpage_align_boundary_setup();
 void set_superpage_512G();
 void hspt_add_reserved_bits();
-void page_table_add_vs_AD(int i);
-void page_table_del_vs_AD(int i);
-void page_table_add_h_AD(int i);
-void page_table_del_h_AD(int i);
 
-#endif /* PAGE_TABLES_H */
+#endif /* DYNAMIC_PAGE_TABLES_H */

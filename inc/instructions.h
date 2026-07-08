@@ -32,6 +32,8 @@
 
 #ifndef __ASSEMBLER__
 
+#include <stdint.h>
+
 #define CSR_STR(s) _CSR_STR(s)
 #define _CSR_STR(s) #s
 
@@ -55,19 +57,47 @@ static inline void sfence(){
 }
 
 static inline void sfence_vma(){
-    
+    asm volatile("sfence.vma x0, x0\n\t" ::: "memory");
 }
 
 static inline void sfence_vmid(){
-    
+    sfence_vma();
 }
 
 static inline void sfence_vma_vmid(){
-    
+    sfence_vma();
 }
 
 static inline void sfence_va(){
-    
+    sfence_vma();
+}
+
+static inline void sfence_vma_rs(uintptr_t vaddr, uint64_t asid){
+    if (vaddr == (uintptr_t)-1 && asid == (uint64_t)-1) {
+        asm volatile("sfence.vma x0, x0\n\t" ::: "memory");
+    } else if (vaddr == (uintptr_t)-1) {
+        asm volatile("sfence.vma x0, %0\n\t" :: "r"(asid) : "memory");
+    } else if (asid == (uint64_t)-1) {
+        asm volatile("sfence.vma %0, x0\n\t" :: "r"(vaddr) : "memory");
+    } else {
+        asm volatile("sfence.vma %0, %1\n\t" :: "r"(vaddr), "r"(asid) : "memory");
+    }
+}
+
+static inline void sret() {
+    asm volatile("sret\n\t" ::: "memory");
+}
+
+static inline void mret() {
+    asm volatile("mret\n\t" ::: "memory");
+}
+
+static inline void mnret() {
+    asm volatile(".insn r 0x73, 0, 0x38, x0, x0, x2\n\t" ::: "memory");
+}
+
+static inline void fence_iorw_iorw() {
+    asm volatile("fence iorw, iorw\n\t" ::: "memory");
 }
 
 static inline void hfence_gvma() {
@@ -192,6 +222,42 @@ static inline void wfi() {
     asm ("wfi" ::: "memory");
 }
 
+static inline void ebreak() {
+    asm volatile("ebreak\n\t" ::: "memory");
+}
+
+static inline void ecall_code() {
+    asm volatile("ecall\n\t" ::: "memory");
+}
+
+static inline void cbo_inval(uintptr_t addr) {
+    asm volatile(".insn i 0x0f, 0x2, x0, %0, 0\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void cbo_clean(uintptr_t addr) {
+    asm volatile(".insn i 0x0f, 0x2, x0, %0, 1\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void cbo_flush(uintptr_t addr) {
+    asm volatile(".insn i 0x0f, 0x2, x0, %0, 2\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void cbo_zero(uintptr_t addr) {
+    asm volatile(".insn i 0x0f, 0x2, x0, %0, 4\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void prefetch_r(uintptr_t addr) {
+    asm volatile(".insn i 0x13, 0x6, x0, %0, 1\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void prefetch_w(uintptr_t addr) {
+    asm volatile(".insn i 0x13, 0x6, x0, %0, 3\n\t" :: "r"(addr) : "memory");
+}
+
+static inline void prefetch_i(uintptr_t addr) {
+    asm volatile(".insn i 0x13, 0x6, x0, %0, 0\n\t" :: "r"(addr) : "memory");
+}
+
 #define LOAD_INSTRUCTION(name, instruction, type) \
     static inline type name(uintptr_t addr){ \
         type value; \
@@ -228,6 +294,46 @@ STORE_INSTRUCTION(sb, "sb", uint8_t);
 STORE_INSTRUCTION(sh, "sh", uint16_t);
 STORE_INSTRUCTION(sw, "sw", uint32_t);
 STORE_INSTRUCTION(sd, "sd", uint64_t);
+
+#define VTYPE(SEW, LMUL) (((SEW) << 3) | (LMUL))
+#define VSEW_FROM_BITS(BITS) \
+    ((BITS) == 8 ? 0 : \
+     (BITS) == 16 ? 1 : \
+     (BITS) == 32 ? 2 : 3)
+
+#define LOAD_VECTOR_TO_REGISTER(name, instruction, type, sew_data) \
+    static inline void name(const type *src, int vl){ \
+        int vtype = VTYPE(VSEW_FROM_BITS(sew_data), 0); \
+        asm volatile( \
+            ".option push\n\t" \
+            ".option norvc\n\t" \
+            "vsetvl t0, %1, %2\n\t" \
+            instruction " v6, (%0)\n\t" \
+            ".option pop\n\t" \
+            :: "r"(src), "r"(vl), "r"(vtype) : "t0", "memory"); \
+    }
+
+#define STORE_VECTOR_FROM_REGISTER(name, instruction, type, sew_data) \
+    static inline void name(type *dest, int vl){ \
+        int vtype = VTYPE(VSEW_FROM_BITS(sew_data), 0); \
+        asm volatile( \
+            ".option push\n\t" \
+            ".option norvc\n\t" \
+            "vsetvl t0, %1, %2\n\t" \
+            instruction " v6, (%0)\n\t" \
+            ".option pop\n\t" \
+            :: "r"(dest), "r"(vl), "r"(vtype) : "t0", "memory"); \
+    }
+
+LOAD_VECTOR_TO_REGISTER(vle8_to_v6, "vle8.v", uint8_t, 8);
+LOAD_VECTOR_TO_REGISTER(vle16_to_v6, "vle16.v", uint16_t, 16);
+LOAD_VECTOR_TO_REGISTER(vle32_to_v6, "vle32.v", uint32_t, 32);
+LOAD_VECTOR_TO_REGISTER(vle64_to_v6, "vle64.v", uint64_t, 64);
+
+STORE_VECTOR_FROM_REGISTER(vse8_from_v6, "vse8.v", uint8_t, 8);
+STORE_VECTOR_FROM_REGISTER(vse16_from_v6, "vse16.v", uint16_t, 16);
+STORE_VECTOR_FROM_REGISTER(vse32_from_v6, "vse32.v", uint32_t, 32);
+STORE_VECTOR_FROM_REGISTER(vse64_from_v6, "vse64.v", uint64_t, 64);
 
 /**
  * For compressed instructions there is no constraint to guarantee
@@ -282,12 +388,31 @@ static inline uint32_t lr_w(uintptr_t addr){
     return value;
 }
 
-static inline uint32_t sc_w(uintptr_t addr, uint64_t value){
+static inline uint64_t lr_d(uintptr_t addr){
+    uint64_t value;
     asm volatile(
-        "sc.w    %0, %0, 0(%1)\n\t"
-        : "+r"(value) : "r"(addr): "memory"
+        "lr.d %0, 0(%1)\n\t"
+        : "=r"(value) : "r"(addr): "memory"
     );
     return value;
+}
+
+static inline uint32_t sc_w(uintptr_t addr, uint32_t value){
+    uint32_t status;
+    asm volatile(
+        "sc.w %0, %2, 0(%1)\n\t"
+        : "=r"(status) : "r"(addr), "r"(value): "memory"
+    );
+    return status;
+}
+
+static inline uint32_t sc_d(uintptr_t addr, uint64_t value){
+    uint32_t status;
+    asm volatile(
+        "sc.d %0, %2, 0(%1)\n\t"
+        : "=r"(status) : "r"(addr), "r"(value): "memory"
+    );
+    return status;
 }
 
 #define AMO_INSTRUCTION(name, instruction, type) \

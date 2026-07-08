@@ -35,7 +35,7 @@
     STORE   x28, 27*REGLEN(sp)
     STORE   x29, 28*REGLEN(sp)
     STORE   x30, 29*REGLEN(sp)
-    STORE   x31, 29*REGLEN(sp)
+    STORE   x31, 30*REGLEN(sp)
 .endm
 
 .macro RESTORE_CONTEXT
@@ -95,12 +95,17 @@ vshandler_entry:
     j _return
     
 _return:
+    li t0, 5 // keep in sync with HANDLER_RETURN_MNRET
+    beq a0, t0, _return_from_mn
     li t0, 4 //make sure PRIV_M is 4
     beq a0, t0, _return_from_m 
 _return_from_s:
     RESTORE_CONTEXT
     sret
     j   .
+_return_from_mn:
+    RESTORE_CONTEXT
+    .insn r 0x73, 0, 0x38, x0, x0, x2
 _return_from_m:
     RESTORE_CONTEXT
     mret

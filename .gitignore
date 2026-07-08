@@ -1,6 +1,10 @@
 build*
 deploy*
 log*
+case_elf_asm/
+.tmp/
+__pycache__/
 
 # Editor specific
 .vscode
+docs/

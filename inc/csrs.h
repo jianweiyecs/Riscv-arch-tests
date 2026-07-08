@@ -27,12 +27,18 @@
 #endif
 
 
+#define MSTATUS_SIE    (1ULL << 1)
+#define MSTATUS_MIE    (1ULL << 3)
+#define MSTATUS_MPP    (3ULL << 11)
 #define MSTATUS_MPRV_OFF    (17)
 #define MSTATUS_MPRV    (1ULL << MSTATUS_MPRV_OFF)
+#define MSTATUS_TVM_OFF (20)
+#define MSTATUS_TVM    (1ULL << MSTATUS_TVM_OFF)
 #define MSTATUS_TW_OFF  (21)
 #define MSTATUS_TW   (1ULL << MSTATUS_TW_OFF)
 #define MSTATUS_GVA_OFF    (38)
 #define MSTATUS_GVA    (1ULL << MSTATUS_GVA_OFF)
+#define MSTATUS_MDT    (1ULL << 42)
 
 #define SATP_MODE_BARE (0ULL << SATP_MODE_OFF)
 #define SATP_MODE_32 (1ULL << SATP_MODE_OFF)
@@ -65,7 +71,14 @@
 #define SSTATUS_XS_DIRTY (3ULL << SSTATUS_XS_OFF)
 #define SSTATUS_SUM (1ULL << 18)
 #define SSTATUS_MXR (1ULL << 19)
+#define MSTATUS_SUM SSTATUS_SUM
+#define MSTATUS_MXR SSTATUS_MXR
+#define SSTATUS_SDT (1ULL << 24)
 #define SSTATUS_SD (1ULL << 63)
+
+#define VSSTATUS_SDT (1ULL << 24)
+
+#define MNSTATUS_NMIE (1ULL << 3)
 
 #define SIE_USIE (1ULL << 0)
 #define SIE_SSIE (1ULL << 1)
@@ -164,11 +177,39 @@
 #define HSTATUS_VSXL_MSK (BIT_MASK(HSTATUS_VSXL_OFF, HSTATUS_VSXL_LEN))
 #define HSTATUS_VSXL_32 (1ULL << HSTATUS_VSXL_OFF)
 #define HSTATUS_VSXL_64 (2ULL << HSTATUS_VSXL_OFF)
+#define HSTATUS_HUPMM (3ULL << 48)
+#define HSTATUS_HUPMM1 (1ULL << 48)
+#define HSTATUS_HUPMM2 (2ULL << 48)
+#define HSTATUS_HUPMM3 (3ULL << 48)
 
 #define HCOUNTEREN_CY   (1ULL << 0)
 #define HCOUNTEREN_TM   (1ULL << 1)   
 #define HCOUNTEREN_IR   (1ULL << 2)
 #define HCOUNTEREN(N)   (1ULL << (N))
+
+#define MENVCFG_STCE (1ULL << 63)
+#define MENVCFG_PBMTE (1ULL << 62)
+#define MENVCFG_DTE (1ULL << 59)
+#define MENVCFG_PMM1 (1ULL << 32)
+#define MENVCFG_PMM2 (1ULL << 33)
+#define MENVCFG_PMM3 (3ULL << 32)
+#define MENVCFG_CBZE (1ULL << 7)
+#define MENVCFG_CBZFE (1ULL << 6)
+#define MENVCFG_CBIE01 (1ULL << 4)
+#define MENVCFG_CBIE11 (3ULL << 4)
+
+#define HENVCFG_PBMTE (1ULL << 62)
+#define HENVCFG_PMM1 (1ULL << 32)
+#define HENVCFG_PMM2 (1ULL << 33)
+#define HENVCFG_PMM3 (3ULL << 32)
+
+#define SENVCFG_PMM1 (1ULL << 32)
+#define SENVCFG_PMM2 (1ULL << 33)
+#define SENVCFG_PMM3 (3ULL << 32)
+
+#define MSECCFG_PMM1 (1ULL << 32)
+#define MSECCFG_PMM2 (1ULL << 33)
+#define MSECCFG_PMM3 (3ULL << 32)
 
 #define TINST_ADDROFF_OFF (15)
 #define TINST_ADDROFF_LEN (5)

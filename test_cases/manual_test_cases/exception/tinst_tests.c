@@ -6,7 +6,7 @@
  *  [] test traps to hs
  *  [] test fp load/store instructions
  *  [] test hypervisor load/store instructions
- *  [] test address offset field for imnplementations that support
+ *  [] test address offset field for implementations that support
  * unaligned acceses or have highest priority for page fault than for
  * unaligned access exceptions.
  *  [] test pseudo-instructions
@@ -22,18 +22,26 @@
 #define TINST_CHECK_COMPRESSED(CHECK) (excpt.tinst == 0 ||\
     excpt.tinst == CHECK(expand_compressed_instruction(read_instruction(excpt.epc)) & ~0b10ULL))
 
-bool tinst_tests(){
+
+
+bool manual_tinst_load_store_amo_page_fault_transform(){
     
     TEST_START();
 
-    hspt_init();
-    goto_priv(PRIV_HS);
-    uintptr_t vaddr_f = hs_page_base(VSI_GI);
+    hspt_init();        
+    goto_priv(PRIV_HS);     
+    uintptr_t vaddr_f = hs_page_base(VSI_GI);      
     uint64_t value = 0xdeadbeef;
 
-    TEST_SETUP_EXCEPT();
+    TEST_SETUP_EXCEPT();        
+    
+    // uint8_t src8[] = {1, 2, 3, 4};
+    // uint8_t dest8[4];
+    // vle8_v(dest8, (uintptr_t)src8);
+
+
     value = lb(vaddr_f);
-    TEST_ASSERT("correct tinst when executing a lb which results in a lpf",
+    TEST_ASSERT("correct tinst when executing a lb which results in a lpf",         
         excpt.triggered == true && 
         excpt.cause == CAUSE_LPF &&
         TINST_CHECK(TINST_LOAD)
@@ -138,7 +146,7 @@ bool tinst_tests(){
     );
 
     TEST_SETUP_EXCEPT();
-    c_sw(vaddr_f, value);
+    c_sw(vaddr_f, value);       
     TEST_ASSERT("correct tinst when executing a c.lw which results in a lpf",
         excpt.triggered == true &&
         excpt.cause == CAUSE_SPF &&

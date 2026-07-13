@@ -1,6 +1,7 @@
 #include <rvh_test.h>
 #include <page_tables.h>
 #include <csrs.h> 
+#include <vector_helpers.h>
 
 #define ADDR_UNALIGNED_EXPECT_CAUSE_IF(test_msg, op, expected_cause, extra_cond) do { \
     TEST_SETUP_EXCEPT(); \

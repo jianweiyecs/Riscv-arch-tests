@@ -60,6 +60,12 @@ static inline void sfence_vma(){
     asm volatile("sfence.vma x0, x0\n\t" ::: "memory");
 }
 
+static inline void Sinval_vma(){
+    asm volatile(
+        ".insn r 0x73, 0x0, 0x0B, x0, x0, x0\n\t"
+        ::: "memory");
+}
+
 static inline void sfence_vmid(){
     sfence_vma();
 }
@@ -92,6 +98,10 @@ static inline void mret() {
     asm volatile("mret\n\t" ::: "memory");
 }
 
+static inline void dret() {
+    asm volatile("dret\n\t" ::: "memory");
+}
+
 static inline void mnret() {
     asm volatile(".insn r 0x73, 0, 0x38, x0, x0, x2\n\t" ::: "memory");
 }
@@ -115,6 +125,12 @@ static inline void hfence_vvma() {
 static inline void hfence() {
     hfence_vvma();
     hfence_gvma();
+}
+
+static inline void INVALID_INSTR() {
+    asm volatile(
+        ".insn r 0x0F, 0x2, 0x01, x0, x0, x0\n\t"
+        ::: "memory");
 }
 
 static inline uint64_t hlvb(uintptr_t addr){
@@ -294,46 +310,6 @@ STORE_INSTRUCTION(sb, "sb", uint8_t);
 STORE_INSTRUCTION(sh, "sh", uint16_t);
 STORE_INSTRUCTION(sw, "sw", uint32_t);
 STORE_INSTRUCTION(sd, "sd", uint64_t);
-
-#define VTYPE(SEW, LMUL) (((SEW) << 3) | (LMUL))
-#define VSEW_FROM_BITS(BITS) \
-    ((BITS) == 8 ? 0 : \
-     (BITS) == 16 ? 1 : \
-     (BITS) == 32 ? 2 : 3)
-
-#define LOAD_VECTOR_TO_REGISTER(name, instruction, type, sew_data) \
-    static inline void name(const type *src, int vl){ \
-        int vtype = VTYPE(VSEW_FROM_BITS(sew_data), 0); \
-        asm volatile( \
-            ".option push\n\t" \
-            ".option norvc\n\t" \
-            "vsetvl t0, %1, %2\n\t" \
-            instruction " v6, (%0)\n\t" \
-            ".option pop\n\t" \
-            :: "r"(src), "r"(vl), "r"(vtype) : "t0", "memory"); \
-    }
-
-#define STORE_VECTOR_FROM_REGISTER(name, instruction, type, sew_data) \
-    static inline void name(type *dest, int vl){ \
-        int vtype = VTYPE(VSEW_FROM_BITS(sew_data), 0); \
-        asm volatile( \
-            ".option push\n\t" \
-            ".option norvc\n\t" \
-            "vsetvl t0, %1, %2\n\t" \
-            instruction " v6, (%0)\n\t" \
-            ".option pop\n\t" \
-            :: "r"(dest), "r"(vl), "r"(vtype) : "t0", "memory"); \
-    }
-
-LOAD_VECTOR_TO_REGISTER(vle8_to_v6, "vle8.v", uint8_t, 8);
-LOAD_VECTOR_TO_REGISTER(vle16_to_v6, "vle16.v", uint16_t, 16);
-LOAD_VECTOR_TO_REGISTER(vle32_to_v6, "vle32.v", uint32_t, 32);
-LOAD_VECTOR_TO_REGISTER(vle64_to_v6, "vle64.v", uint64_t, 64);
-
-STORE_VECTOR_FROM_REGISTER(vse8_from_v6, "vse8.v", uint8_t, 8);
-STORE_VECTOR_FROM_REGISTER(vse16_from_v6, "vse16.v", uint16_t, 16);
-STORE_VECTOR_FROM_REGISTER(vse32_from_v6, "vse32.v", uint32_t, 32);
-STORE_VECTOR_FROM_REGISTER(vse64_from_v6, "vse64.v", uint64_t, 64);
 
 /**
  * For compressed instructions there is no constraint to guarantee

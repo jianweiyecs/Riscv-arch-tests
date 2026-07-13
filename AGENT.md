@@ -366,6 +366,12 @@ python3 scripts/compile_elf.py \
 python3 scripts/compile_elf.py \
   --target-profile nanhuv5 \
   --name manual_csr_mstatus_mie_read_write
+
+# 同时编译 LinkNan 和 Spike 两份 ELF
+python3 scripts/compile_elf.py \
+  --target-profile nanhuv5 \
+  --plat linknan,spike \
+  --name manual_csr_mstatus_mie_read_write
 ```
 
 ### 5. 运行测试

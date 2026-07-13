@@ -310,5 +310,8 @@ uint32_t expand_compressed_instruction(uint16_t ins);
 void reset_state();
 void set_prev_priv(int target_priv);
 void goto_priv(int target_priv);
+uint64_t mhandler();
+uint64_t hshandler();
+uint64_t vshandler();
 
 #endif

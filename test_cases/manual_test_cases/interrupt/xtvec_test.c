@@ -99,7 +99,7 @@ void m_test_entry_two_0() {
         printf("mhandler中发生软件中断\n"); 
         CSRS(CSR_MSTATUS , MSTATUS_MIE);
         CSRS(mie, 1ULL << 1);
-        CSRS(mip, MIP_SSIP);
+        CSRS(mip, SIP_SSIP);
     }  
 
     if (trap == 2) { 
@@ -137,7 +137,7 @@ void m_test_entry_two_0() {
     if (trap == 9) { 
         trap = 0; 
         printf("将mepc设置为非法地址\n");
-        CSRS(CSR_MEPC,0x111188880000)
+        CSRS(CSR_MEPC,0x111188880000);
         printf("设置完毕\n");
         printf("mepc=%llx\n",CSRR(CSR_MEPC));
     }  
@@ -540,7 +540,7 @@ bool manual_trap_vector_smrnmi_m_mtvec_vectored_2_mnret() {
     CSRS(CSR_MSTATUS, MSTATUS_MIE);
     CSRS(CSR_MSTATUS, MSTATUS_SIE);
 
-    CSRS(mie, MIE_SSIE);
+    CSRS(mie, SIE_SSIE);
 
     CSRW(CSR_STVEC,hs_test_entry);
     CSRW(CSR_MTVEC,m_test_entry);
@@ -1282,6 +1282,5 @@ bool manual_trap_vector_rnnmi_handler_mnstatus_nmie_1_mstatus_mdt_1_trap_m() {
 }
 
 //-------------------------------ssdbltrp_test_end-------------------------------------
-
 
 

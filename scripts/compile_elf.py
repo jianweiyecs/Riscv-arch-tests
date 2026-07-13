@@ -681,7 +681,7 @@ def print_source_plan(tests, plans, errors, args):
 def build_parser():
     parser = argparse.ArgumentParser(description="Compile selected arch-test cases without editing test_register.c")
     parser.add_argument("targets", nargs="*", help="optional hyper-compatible selector: all, line, or start end")
-    parser.add_argument("--plat")
+    parser.add_argument("--plat", action="append", dest="plats", help="platform(s) to build; repeat or comma-separate, e.g. --plat linknan,spike")
     parser.add_argument("--target-profile", default=DEFAULT_TARGET_PROFILE)
     parser.add_argument("--cross-compile")
     parser.add_argument("--tmpdir", default=os.environ.get("HYPTEST_TMPDIR") or os.environ.get("TMPDIR") or str(TMP_DIR))
@@ -709,50 +709,34 @@ def build_parser():
     return parser
 
 
-def main():
-    args = build_parser().parse_args()
-    args.plat = args.plat or target_default_platform(args.target_profile)
-    args.cross_compile = (
-        args.cross_compile
-        or os.environ.get("HYPTEST_CROSS_COMPILE")
-        or os.environ.get("CROSS_COMPILE")
-        or DEFAULT_CROSS_COMPILE
-    )
+def parse_platforms(values, target_profile):
+    raw_items = []
+    for value in values or []:
+        raw_items.extend(str(value).split(","))
+    platforms = []
+    seen = set()
+    for item in raw_items:
+        platform = item.strip()
+        if not platform or platform in seen:
+            continue
+        platforms.append(platform)
+        seen.add(platform)
+    if not platforms:
+        platforms.append(target_default_platform(target_profile))
+    return platforms
 
-    case_roots = existing_case_roots(args.case_root)
-    case_to_source, case_duplicates = build_case_source_index(case_roots)
-    symbol_to_source, asm_duplicates = build_asm_symbol_index(case_roots)
-    tests = discover_all_cases(case_to_source) if args.discover_all else parse_registers(args.include_commented)
 
-    if args.list_cases:
-        visible = tests if args.discover_all or args.include_commented else [test for test in tests if test.active]
-        print_case_list(visible, case_to_source, symbol_to_source)
-        return 0
-
-    selected = select_cases(tests, args)
-    if not selected:
-        raise SystemExit("no case selected; use --name, --match, --range, all, --all-active, or --all-discovered")
-
-    print(f"target profile: {args.target_profile}")
-    print(f"platform: {args.plat}")
-    print(f"cross compile: {args.cross_compile}")
-    print(f"jobs: -j{max(1, args.jobs)}")
-    print(f"case roots: {', '.join(display_path(path) for path in case_roots)}")
-    print_selected_tests(selected)
-
-    plans, errors = build_source_plan(selected, case_to_source, case_duplicates, symbol_to_source, asm_duplicates)
-    print_source_plan(selected, plans, errors, args)
-    if args.plan_only:
-        return 0 if not errors else 2
-
-    OUT_ROOT.mkdir(exist_ok=True)
+def compile_platform(args, platform, selected, plans, errors):
+    args.plat = platform
     ok_count = 0
     fail_count = 0
     failures = []
     progress = ProgressReporter(len(selected))
     clean_pending = args.clean
 
-    with BuildLock(args.plat):
+    print(f"platform: {platform}")
+
+    with BuildLock(platform):
         for index, test in enumerate(selected, 1):
             plan = plans.get(test.name)
             if plan is None:
@@ -779,9 +763,9 @@ def main():
             progress.update(index, ok_count, fail_count, test.name)
 
     progress.finish()
-    print(f"compile done: ok={ok_count} fail={fail_count}")
+    print(f"compile done ({platform}): ok={ok_count} fail={fail_count}")
     if failures:
-        print("failures:")
+        print(f"failures ({platform}):")
         for failure in failures:
             print(f"- {failure.case_name}: {failure.reason}")
             if failure.command:
@@ -790,8 +774,58 @@ def main():
                 print("  output:")
                 for line in failure.output.splitlines():
                     print("    " + line)
-    print(f"output dir: {display_path(OUT_ROOT / args.plat)}/")
-    return 0 if fail_count == 0 else 2
+    print(f"output dir ({platform}): {display_path(OUT_ROOT / platform)}/")
+    return ok_count, fail_count
+
+
+def main():
+    args = build_parser().parse_args()
+    platforms = parse_platforms(args.plats, args.target_profile)
+    args.plat = platforms[0]
+    args.cross_compile = (
+        args.cross_compile
+        or os.environ.get("HYPTEST_CROSS_COMPILE")
+        or os.environ.get("CROSS_COMPILE")
+        or DEFAULT_CROSS_COMPILE
+    )
+
+    case_roots = existing_case_roots(args.case_root)
+    case_to_source, case_duplicates = build_case_source_index(case_roots)
+    symbol_to_source, asm_duplicates = build_asm_symbol_index(case_roots)
+    tests = discover_all_cases(case_to_source) if args.discover_all else parse_registers(args.include_commented)
+
+    if args.list_cases:
+        visible = tests if args.discover_all or args.include_commented else [test for test in tests if test.active]
+        print_case_list(visible, case_to_source, symbol_to_source)
+        return 0
+
+    selected = select_cases(tests, args)
+    if not selected:
+        raise SystemExit("no case selected; use --name, --match, --range, all, --all-active, or --all-discovered")
+
+    print(f"target profile: {args.target_profile}")
+    print(f"platforms: {', '.join(platforms)}")
+    print(f"cross compile: {args.cross_compile}")
+    print(f"jobs: -j{max(1, args.jobs)}")
+    print(f"case roots: {', '.join(display_path(path) for path in case_roots)}")
+    print_selected_tests(selected)
+
+    plans, errors = build_source_plan(selected, case_to_source, case_duplicates, symbol_to_source, asm_duplicates)
+    print_source_plan(selected, plans, errors, args)
+    if args.plan_only:
+        return 0 if not errors else 2
+
+    OUT_ROOT.mkdir(exist_ok=True)
+    total_ok = 0
+    total_fail = 0
+    for platform in platforms:
+        ok_count, fail_count = compile_platform(args, platform, selected, plans, errors)
+        total_ok += ok_count
+        total_fail += fail_count
+
+    if len(platforms) > 1:
+        print(f"compile summary: platforms={len(platforms)} ok={total_ok} fail={total_fail}")
+    return 0 if total_fail == 0 else 2
 
 
 if __name__ == "__main__":

@@ -212,6 +212,18 @@ python3 scripts/compile_elf.py \
   --name manual_ebreak_m_ebreak_breakpoint
 ```
 
+如果要同时生成 LinkNan 和 Spike 两份 ELF，可以重复 `--plat`，也可以用逗号分隔：
+
+```bash
+python3 scripts/compile_elf.py \
+  --target-profile nanhuv5 \
+  --cross-compile /nfs/share/opt/riscv/bin/riscv64-unknown-elf- \
+  --plat linknan,spike \
+  --name manual_ebreak_m_ebreak_breakpoint
+```
+
+两份产物会分别导出到 `case_elf_asm/linknan/` 和 `case_elf_asm/spike/`。
+
 动态页表 case 会自动选择 `PAGE_TABLE_BACKEND=dynamic`：
 
 ```bash
@@ -627,6 +639,7 @@ TEST_REGISTER(my_test);           // 启用
 | 选项 | 说明 | 示例 |
 |------|------|------|
 | `--target-profile` | 目标配置（nanhuv5/generic） | `--target-profile nanhuv5` |
+| `--plat` | 编译平台；可重复或用逗号分隔 | `--plat linknan,spike` |
 | `--name` | 指定测试名称 | `--name my_test` |
 | `--match` | 正则匹配测试名 | `--match "^manual_csr_"` |
 | `--exclude` | 正则排除测试名 | `--exclude "disabled"` |

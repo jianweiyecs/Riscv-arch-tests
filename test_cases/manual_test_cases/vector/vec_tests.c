@@ -1,4 +1,5 @@
 #include <rvh_test.h>
+#include <vector_helpers.h>
 
 bool manual_vector_vec_vle_vse_func_mstatus_vs1(){
     TEST_START();
@@ -468,7 +469,7 @@ bool manual_vector_vcompress_non_zero_vstart_raises_ili_inst(){
     // 设置 vcompress 的执行条件
     set_vcompress_conditions(vl, sew, lmull, v0_init, v4_init, v8_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     TEST_SETUP_EXCEPT();
@@ -503,7 +504,7 @@ bool manual_vector_viota_m_non_zero_vstart_raises_ili_inst(){
     // 设置 viota.m 的执行条件
     set_viota_m_conditions(vl, sew, lmull, v0_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     TEST_SETUP_EXCEPT();
@@ -549,7 +550,7 @@ bool manual_vector_vredsum_vs_non_zero_vstart_raises_ili_inst(){
     set_vredsum_vs_conditions(sew, lmull, vl, vs1_init, vs2_init);
     excpt_info();
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     TEST_SETUP_EXCEPT();
@@ -587,7 +588,7 @@ bool manual_vector_vcpop_m_non_zero_vstart_raises_ili_inst(){
     // 设置 vcpop.m 的执行条件
     set_vcpop_conditions(vl, sew, lmull, v0_init, v2_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     // 执行 vcpop.m 指令并返回结果
@@ -628,7 +629,7 @@ bool manual_vector_vfirst_m_non_zero_vstart_raises_ili_inst(){
     set_vfirst_m_conditions(vl, sew, lmull, v0_init, v4_init);
     excpt_info();
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     TEST_SETUP_EXCEPT();
@@ -663,7 +664,7 @@ bool manual_vector_vmsbf_m_non_zero_vstart_raises_ili_inst(){
     // 设置vmsbf.m执行条件
     set_vmsbfm_conditions(vl, sew, lmull, v0_init, v4_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     TEST_SETUP_EXCEPT();
@@ -697,7 +698,7 @@ bool manual_vector_vmsif_m_non_zero_vstart_raises_ili_inst(){
     // 设置 vmsif.m 的执行条件
     set_vmsifm_conditions(vl, sew, lmull, v0_init, v4_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     // 执行 vmsif.m 指令
@@ -731,7 +732,7 @@ bool manual_vector_vmsof_m_non_zero_vstart_raises_ili_inst(){
     // 设置 vmsof.m 的执行条件  
     set_vmsofm_conditions(vl, sew, lmull, v0_init, v4_init);
 
-    CSRW(CSR_VSTART,(uint64_t)-1)       //设置vstart非零
+    CSRW(CSR_VSTART,(uint64_t)-1);       //设置vstart非零
     printf("vstart=%llx\n",CSRR(CSR_VSTART));
 
     // 执行 vmsof.m 指令

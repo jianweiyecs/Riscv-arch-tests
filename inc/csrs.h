@@ -10,20 +10,36 @@
 #define STVEC_MODE_DIRECT (0)
 #define STVEC_MODE_VECTRD (1)
 
-#if (RV64)
+#if defined(RV64) && RV64
 #define SATP_MODE_OFF (60)
 #define SATP_MODE_DFLT SATP_MODE_39
 #define SATP_ASID_OFF (44)
 #define SATP_ASID_LEN (16)
 #define HGATP_VMID_OFF (44)
 #define HGATP_VMID_LEN (14)
-#elif (RV32)
+#elif defined(RV32) && RV32
 #define SATP_MODE_OFF (31)
 #define SATP_MODE_DFLT SATP_MODE_32
 #define SATP_ASID_OFF (22)
 #define SATP_ASID_LEN (9)
 #define HGATP_VMID_OFF (22)
 #define HGATP_VMID_LEN (7)
+#elif defined(__riscv_xlen) && (__riscv_xlen == 64)
+#define SATP_MODE_OFF (60)
+#define SATP_MODE_DFLT SATP_MODE_39
+#define SATP_ASID_OFF (44)
+#define SATP_ASID_LEN (16)
+#define HGATP_VMID_OFF (44)
+#define HGATP_VMID_LEN (14)
+#elif defined(__riscv_xlen) && (__riscv_xlen == 32)
+#define SATP_MODE_OFF (31)
+#define SATP_MODE_DFLT SATP_MODE_32
+#define SATP_ASID_OFF (22)
+#define SATP_ASID_LEN (9)
+#define HGATP_VMID_OFF (22)
+#define HGATP_VMID_LEN (7)
+#else
+#error "Unable to determine RISC-V XLEN for SATP/HGATP field definitions"
 #endif
 
 
@@ -97,24 +113,35 @@
 #define HIE_VSSIE (1ULL << 2)
 #define HIE_VSTIE (1ULL << 6)
 #define HIE_VSEIE (1ULL << 10)
+#define HIE_MEIE (1ULL << 11)
 #define HIE_SGEIE (1ULL << 12)
+
+#define MIE_MEIE (1ULL << 11)
+#define MIP_MEIP MIE_MEIE
+#define MIE_MSIE (1ULL << 3)
+#define MIP_MSIP MIE_MSIE
+#define MIE_SSIE SIE_SSIE
+#define MIP_SSIP SIP_SSIP
 
 #define HIP_VSSIP HIE_VSSIE
 #define HIP_VSTIP HIE_VSTIE
 #define HIP_VSEIP HIE_VSEIE
 #define HIP_SGEIP HIE_SGEIE
+#define HIP_MEIP HIE_MEIE
 
 #define CAUSE_INT_BIT (1ULL << 63)
 #define CAUSE_MSK (CAUSE_INT_BIT - 1)
 #define CAUSE_USI (0 | CAUSE_INT_BIT)
 #define CAUSE_SSI (1 | CAUSE_INT_BIT)
 #define CAUSE_VSSI (2 | CAUSE_INT_BIT)
+#define CAUSE_MSI (3 | CAUSE_INT_BIT)
 #define CAUSE_UTI (4 | CAUSE_INT_BIT)
 #define CAUSE_STI (5 | CAUSE_INT_BIT)
 #define CAUSE_VSTI (6 | CAUSE_INT_BIT)
 #define CAUSE_UEI (8 | CAUSE_INT_BIT)
 #define CAUSE_SEI (9 | CAUSE_INT_BIT)
 #define CAUSE_VSEI (10 | CAUSE_INT_BIT)
+#define CAUSE_MEI (11 | CAUSE_INT_BIT)
 #define CAUSE_IAM (0)
 #define CAUSE_IAF (1)
 #define CAUSE_ILI (2)
@@ -215,5 +242,16 @@
 #define TINST_ADDROFF_LEN (5)
 #define TINST_ADDROFF_MASK BIT_MASK(TINST_ADDROFF_OFF, TINST_ADDROFF_LEN)
 #define TINST_ADDROFF TINST_ADDROFF_MASK
+
+#define MSTATEEN_C (1ULL << 0)
+#define MSTATEEN_FCSR (1ULL << 1)
+#define MSTATEEN_JVT (1ULL << 2)
+#define MSTATEEN_P1P13 (1ULL << 56)
+#define MSTATEEN_CONTEXT (1ULL << 57)
+#define MSTATEEN_IMSIC (1ULL << 58)
+#define MSTATEEN_AIA (1ULL << 59)
+#define MSTATEEN_CSRIND (1ULL << 60)
+#define MSTATEEN_ENVCFG (1ULL << 62)
+#define MSTATEEN_SE0 (1ULL << 63)
 
 #endif /* __ARCH_CSRS_H__ */

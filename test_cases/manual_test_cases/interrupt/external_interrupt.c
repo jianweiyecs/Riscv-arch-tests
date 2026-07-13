@@ -62,7 +62,7 @@ bool manual_ext_irq_ext_irq_mei_m_level_ext_irq_mstatus_mie1_mip_meip1_mie_meie1
     //M模式下产生单bit外部中断，mstatus.mie=0，且mip.MEIP=1，mie.MIE=0
     TEST_SETUP_EXCEPT();
     goto_priv(PRIV_M);
-    CSRC(CSR_MSTATUS,1ULL << 3)     
+    CSRC(CSR_MSTATUS,1ULL << 3);
     CSRS(CSR_MIE,MIE_MEIE);
     CSRC(CSR_MIP,MIP_MEIP);
 
@@ -74,7 +74,7 @@ bool manual_ext_irq_ext_irq_mei_m_level_ext_irq_mstatus_mie1_mip_meip1_mie_meie1
     //M模式下产生单bit外部中断，mstatus.mie=0，且mip.MEIP=0，mie.MIE=0
     TEST_SETUP_EXCEPT();
     goto_priv(PRIV_M);
-    CSRC(CSR_MSTATUS,1ULL << 3)     
+    CSRC(CSR_MSTATUS,1ULL << 3);
     CSRC(CSR_MIE,MIE_MEIE);
     CSRC(CSR_MIP,MIP_MEIP);
 
@@ -354,7 +354,7 @@ bool manual_ext_irq_ext_irq_sei_hs_level_ext_irq_sstatus_sie1_sip_seip1_sie_seie
     //HS模式下产生单bit外部中断，sstatus.mie=1，且sip.SEIP=0，sie.SIE=0
     TEST_SETUP_EXCEPT();
     goto_priv(PRIV_M);
-    CSRS(CSR_SSTATUS,1ULL << 1)     
+    CSRS(CSR_SSTATUS,1ULL << 1);
     CSRC(CSR_SIE,SIE_SEIE);
     CSRC(CSR_SIP,SIP_SEIP);
 
@@ -366,7 +366,7 @@ bool manual_ext_irq_ext_irq_sei_hs_level_ext_irq_sstatus_sie1_sip_seip1_sie_seie
     //HS模式下产生单bit外部中断，sstatus.sie=0，且sip.SEIP=0，sie.SIE=0
     TEST_SETUP_EXCEPT();
     goto_priv(PRIV_M);
-    CSRC(CSR_SSTATUS,1ULL << 1)     
+    CSRC(CSR_SSTATUS,1ULL << 1);
     CSRC(CSR_SIE,SIE_SEIE);
     CSRC(CSR_SIP,SIP_SEIP);
 

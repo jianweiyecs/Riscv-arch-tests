@@ -26,7 +26,20 @@ DEFAULT_ELF_DIRS = {
     "nemu": REPO_ROOT / "case_elf_asm" / "nemu",
 }
 DEFAULT_LOG_DIR = REPO_ROOT / ".tmp" / "result_log"
-DEFAULT_SPIKE_ISA = "RV64gch"
+DEFAULT_SPIKE_ISA = (
+    "rv64IMAFDCV_zicond_zicntr_zihpm_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_"
+    "zimop_zcmop_zcb_zknd_zkne_zknh_zksed_zksh_zvbb_svinval_sscofpmf_svpbmt_"
+    "zicbom_zicboz_sstc_svnapot_smstateen_zicclsm_smrnmi"
+)
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def timeout_output_text(value):
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    return str(value)
 
 
 def select_elves(args):
@@ -56,9 +69,10 @@ def select_elves(args):
 
 
 def result_from_output(output):
-    if re.search(r"\bFAILED\b", output) or "ERROR:" in output or "untested exception" in output:
+    clean = ANSI_ESCAPE_RE.sub("", output)
+    if "FAILED" in clean or "ERROR:" in clean or "untested exception" in clean:
         return "FAIL"
-    if re.search(r"\bPASSED\b", output):
+    if "PASSED" in clean:
         return "PASS"
     return "UNKNOWN"
 
@@ -143,7 +157,7 @@ def run_one(args, case_name, elf):
         if proc.returncode != 0 and status == "UNKNOWN":
             status = "FAIL"
     except subprocess.TimeoutExpired as exc:
-        output = (exc.stdout or "") + "\nTIMEOUT\n"
+        output = timeout_output_text(exc.stdout) + "\nTIMEOUT\n"
         status = "TIMEOUT"
 
     log_file.write_text("$ " + " ".join(map(str, cmd)) + "\n\n" + output)
